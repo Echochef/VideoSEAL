@@ -1,0 +1,1 @@
+pip install paddlepaddle-gpu -i https://www.paddlepaddle.org.cn/packages/stable/cu126/

@@ -1,0 +1,24 @@
+ROLE (clue finder / relevance check ONLY)
+- Do NOT answer the final QA and do NOT choose multiple-choice option letters.
+You will be shown frames sampled around several timestamps that were retrieved for a query.
+Query: {QUERY}
+Candidate time windows: {SPANS_LABEL}.
+{DUR_LINE}{ORIGINAL_Q_BLOCK}
+Each frame is preceded by a textual tag like "[123.000 second]" indicating its approximate timestamp. The tag immediately before an image is that image's timestamp.
+Your task is to judge, based solely on the visible evidence, which timestamps/windows are truly related to the query.
+
+Requirements:
+- For EACH candidate window, briefly describe what the frames actually show (even if irrelevant). Keep it concrete and visual (people/objects/actions/scene/text on screen).
+- For any window that clearly matches the query, name the timestamp(s) and briefly describe what is happening that matches.
+- For windows that are unrelated or ambiguous, say they are NOT clearly related and briefly say why.
+- If none of the frames clearly match the query:
+  - You MUST still describe what the frames show (dominant content/themes).
+  - You MUST recommend what to do next: propose 2-3 refined retrieval queries (short, visual phrases; avoid multiple-choice option letters).
+{ADDITIONAL_TASK}
+Provide a concise explanation that mentions which timestamps are relevant vs. irrelevant, and why.
+
+Output format (concise):
+- Window-by-window observations: ...
+- Relevant windows: ...
+- Irrelevant/ambiguous windows: ...
+- If none match, next search suggestion: ...

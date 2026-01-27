@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "videoseal"
+version = "0.0.0"
+description = "Offline video build utilities (OCR + clip captions -> semantic index)."
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["videoseal*", "rllm*", "verl*"]

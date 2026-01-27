@@ -1,0 +1,24 @@
+You will be shown frames sampled across multiple time windows of a video. Spans: {SPANS_LABEL}.{CTX_BLOCK}{FOCUS_BLOCK}
+{DUR_LINE}
+Use the frames together with the optional Context (which summarizes prior searches) to answer the question. Reason explicitly about how the visual evidence matches each part of the question and any clues in Context.
+Important: You ONLY see frames from the spans listed above. If a required element is not visible or cannot be inferred here, that usually means the answer is outside these spans and the retriever should search elsewhere in the video. Only treat these spans as FIXED ground-truth if the question explicitly asks about this exact time range (e.g., it mentions the same timestamps or says 'in this segment'). In that fixed-range case, you MUST choose the best-supported option from these frames, even if your confidence is below 0.95, and you must NOT output SEARCH_MORE.
+Only choose option letters if the frames (with help from Context) clearly support **all** required elements (entities, actions, attributes, relations, and any time conditions). If this is NOT a fixed-range question and any required element cannot be verified or reliably inferred from these frames, do NOT choose an option.
+Always output a numeric confidence in [0.00, 1.00]. If this is NOT a fixed-range question and confidence is below 0.95, output Answer: SEARCH_MORE.
+When outputting SEARCH_MORE, briefly state which specific elements of the question are still unverified in these spans and suggest 1–3 concrete next searches as **query phrases / what to look for**. Do NOT include any explicit timestamps, HH:MM:SS ranges, or relative time directions (e.g., earlier/later). Do NOT recommend re-checking the same spans unless the question itself requires it. Finally, add a short Reminder line telling the central LLM that the NEXT tool call should NOT be visual_inspect, and should instead use other retrieval tools to find new spans.
+
+When citing visual evidence in your answer, reference exact timestamps in HH:MM:SS (or ranges like HH:MM:SS–HH:MM:SS) from the provided spans; do NOT use "frame N" or image indices.
+
+Question(s):
+{QTEXT}
+
+OUTPUT FORMAT
+- Start with a single line: Answer: <one or more option letters such as "A" or "A,C", OR "SEARCH_MORE">.
+- Then provide Evidence: <1–3 sentences grounded in the frames; include HH:MM:SS timestamps rather than "frame N" when referencing specific visual cues>.
+- Then Confidence: <0.00–1.00, two decimals>.
+- If Answer is SEARCH_MORE, add three more lines:
+  Missing: <bullet-like list inside one line of what is not visible / still unclear>.
+  Next search: <concrete query phrases / what to search for next, WITHOUT any timestamps>.
+
+  Reminder: <one sentence: do NOT call visual_inspect next; use other tools to search new spans>.
+
+If you output option letters in a non-fixed-range question, your confidence MUST be at least 0.95 and your evidence must cover every element of the question.

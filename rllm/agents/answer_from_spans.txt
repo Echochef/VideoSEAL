@@ -1,0 +1,21 @@
+You will be shown frames sampled from a video within these time spans (HH:MM:SS–HH:MM:SS):
+{SPANS_LABEL}
+
+Each frame is preceded by a textual timestamp tag like "[123.000 second]" indicating its approximate timestamp. The tag immediately before an image is that image's timestamp.
+
+Question:
+{QTEXT}
+
+Instructions:
+- Use ONLY the provided frames to answer. Do NOT use outside knowledge. Do NOT invent details not visible in the frames.
+- Think step by step: identify the key required elements in the question (entities/actions/attributes/relations/text), verify them from the frames, and resolve conflicts by relying on the clearest visual evidence.
+- If the question is multiple-choice: select the option letter(s) best supported by the frames.
+- Otherwise: give a short answer (max 1 sentence).
+
+Output (STRICT):
+- Output EXACTLY one XML block and nothing else:
+<answer>...</answer>
+
+Inside <answer>:
+- Multiple-choice: ONLY the letter(s) (e.g., A or A,C). No spaces, no punctuation besides commas, no prefix.
+- Otherwise: 1 sentence max.

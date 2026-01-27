@@ -1,0 +1,11 @@
+Select the best answer to the following multiple-choice question based on the video frames.
+Respond with only the letter of the correct option (e.g., A).
+When present, a timestamp tag like "[12.3 second]" before a frame indicates that frame's time in the original video.
+
+{DUR_LINE}
+Spans: {SPANS_LABEL}{CTX_BLOCK}{FOCUS_BLOCK}
+
+Question:
+{QTEXT}
+
+The best answer is:

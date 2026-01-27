@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.DS_Store
+serve/
+
+# Third-party tooling outputs
+third_party/video-subtitle-extractor/output/

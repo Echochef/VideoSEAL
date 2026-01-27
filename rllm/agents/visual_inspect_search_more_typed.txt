@@ -1,0 +1,41 @@
+You will be shown frames sampled across multiple time windows of a video. Spans: {SPANS_LABEL}.{CTX_BLOCK}{FOCUS_BLOCK}
+{DUR_LINE}
+
+Use the frames together with the optional Context (which summarizes prior searches) to answer the question. Reason explicitly about how the visual evidence matches each part of the question and any clues in Context.
+
+Important:
+- You ONLY see frames from the spans listed above.
+- Treat these spans as FIXED ground-truth only if the question explicitly asks about this exact time range (e.g., it mentions the same timestamps or says 'in this segment'). In that fixed-range case, you MUST choose the best-supported option from these frames, even if confidence is below 0.95, and you MUST NOT output SEARCH_MORE.
+- Otherwise, only choose option letters if the frames (with help from Context) clearly support ALL required elements (entities/actions/attributes/relations/time conditions). If any required element cannot be verified or reliably inferred, do NOT choose an option.
+- Always output a numeric confidence in [0.00, 1.00]. If this is NOT a fixed-range question and confidence is below 0.95, you MUST output Answer: SEARCH_MORE.
+
+SEARCH_MORE (typed):
+If you output SEARCH_MORE, you MUST also output SearchMoreType as exactly one of:
+- SPAN_MISMATCH: the described event/entity/condition is not present in these frames (wrong spans).
+- PARTIAL_EVIDENCE: some required evidence is present, but key element(s) are missing to decide.
+- VISUAL_UNCLEAR: the right scene is present but critical details are too small/blurred/occluded/illegible or overwhelmed by too many frames.
+- IDENTITY_AMBIGUOUS: cannot verify who/which entity is the protagonist/target (e.g., player name/face not confirmed).
+- REPEATED_FAIL: Context indicates multiple prior failed searches / multiple SEARCH_MORE; broaden and diversify the next retrieval.
+
+Next search rules (VERY IMPORTANT):
+- Next search must contain 1–3 short query phrases for retrieval (what to look for), WITHOUT ANY timestamps/time ranges (no 02:08, no 00:20:26, no HH:MM:SS) and WITHOUT relative-time directions like "earlier", "later", "before", "after", "previous", "following".
+- If you need to refer to the moment, describe it semantically (e.g., "when the girl-inset is visible" or "when the road sign with airport text appears"), not by time.
+- Do NOT recommend re-checking the same spans unless the question itself requires it.
+- End with a Reminder line: the NEXT tool call should NOT be visual_inspect; use retrieval tools to find new spans (e.g., visual_retrieve / image_retrieve / overview_read).
+
+When citing visual evidence in your answer, reference exact timestamps in HH:MM:SS (or ranges like HH:MM:SS–HH:MM:SS) from the provided spans; do NOT use "frame N" or image indices.
+
+Question(s):
+{QTEXT}
+
+OUTPUT FORMAT
+- Start with a single line: Answer: <one or more option letters such as "A" or "A,C", OR "SEARCH_MORE">.
+- Then provide Evidence: <1–3 sentences grounded in the frames; include HH:MM:SS timestamps rather than "frame N" when referencing specific visual cues>.
+- Then Confidence: <0.00–1.00, two decimals>.
+- If Answer is SEARCH_MORE, add four more lines:
+  SearchMoreType: <SPAN_MISMATCH|PARTIAL_EVIDENCE|VISUAL_UNCLEAR|IDENTITY_AMBIGUOUS|REPEATED_FAIL>
+  Missing: <one line listing what is not visible / still unclear; do NOT include timestamps>.
+  Next search: <1–3 query phrases / what to search for next, WITHOUT any timestamps or earlier/later>.
+  Reminder: <one sentence: do NOT call visual_inspect next; use other tools to search new spans>.
+
+If you output option letters in a non-fixed-range question, your confidence MUST be at least 0.95 and your evidence must cover every element of the question.
