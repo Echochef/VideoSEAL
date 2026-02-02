@@ -11,12 +11,12 @@ class TestPerQuestionRunner(unittest.TestCase):
     def test_map_step1_dir_to_unified_semantic(self) -> None:
         from videoseal.runner.per_question_runner import _map_step1_dir_to_unified_semantic
 
-        p = "/mnt/shanhai-ai/qiuchenhao/data/LVU/data/step1/LVBench/vid123"
+        p = "data/LVU/data/step1/LVBench/vid123"
         out = _map_step1_dir_to_unified_semantic(p)
-        self.assertEqual(out, "/mnt/shanhai-ai/qiuchenhao/data/LVU/data/indexes/semantic/LVBench/vid123")
+        self.assertEqual(out, "data/LVU/data/indexes/semantic/LVBench/vid123")
 
         self.assertIsNone(_map_step1_dir_to_unified_semantic("/a/b/c/not_step1/LVBench/vid123"))
-        self.assertIsNone(_map_step1_dir_to_unified_semantic("/mnt/shanhai-ai/qiuchenhao/data/LVU/data/step1/only_one_part"))
+        self.assertIsNone(_map_step1_dir_to_unified_semantic("data/LVU/data/step1/only_one_part"))
 
     def test_meta_json_benchmark_strict(self) -> None:
         from videoseal.runner.per_question_runner import _meta_json_benchmark
@@ -54,7 +54,7 @@ class TestPerQuestionRunner(unittest.TestCase):
                 "question": "Q?",
                 "ground_truth": "A",
                 "VIDEO_PATH": "/tmp/vid1.mp4",
-                "SEMANTIC_INDEX_DIR": "/mnt/shanhai-ai/qiuchenhao/data/LVU/data/step1/LVBench/vid1",
+                "SEMANTIC_INDEX_DIR": "data/LVU/data/step1/LVBench/vid1",
                 "meta_json": json.dumps({"benchmark": "LVBench"}),
             }
             table = pa.Table.from_pydict({"extra_info": [extra]})
@@ -67,10 +67,9 @@ class TestPerQuestionRunner(unittest.TestCase):
             self.assertEqual(tasks[0]["benchmark"], "LVBench")
             self.assertEqual(
                 tasks[0]["visual_index"],
-                "/mnt/shanhai-ai/qiuchenhao/data/LVU/data/indexes/semantic/LVBench/vid1",
+                "data/LVU/data/indexes/semantic/LVBench/vid1",
             )
 
 
 if __name__ == "__main__":
     unittest.main()
-

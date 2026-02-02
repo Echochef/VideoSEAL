@@ -17,7 +17,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 export PYTHON="${PYTHON:-/root/miniconda3/envs/rllm/bin/python}"
-export DEFAULT_DATA_ROOT="${DEFAULT_DATA_ROOT:-/mnt/shanhai-ai/qiuchenhao/data/LVU/data}"
+export DEFAULT_DATA_ROOT="${DEFAULT_DATA_ROOT:-${REPO_DIR}/data}"
 
 export BENCHMARK="${BENCHMARK:-LVBench}"
 export VIDEO="${VIDEO:-}"

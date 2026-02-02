@@ -15,7 +15,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PYTHON="${PYTHON:-/root/miniconda3/envs/rllm/bin/python}"
 
 # Data root (LVU unified layout on this machine).
-export DEFAULT_DATA_ROOT="${DEFAULT_DATA_ROOT:-/mnt/shanhai-ai/qiuchenhao/data/LVU/data}"
+export DEFAULT_DATA_ROOT="${DEFAULT_DATA_ROOT:-${REPO_DIR}/data}"
 
 # ---------- Retrieve / Inspect knobs ---------- #
 export INSPECT_MAX_LONG_EDGE="${INSPECT_MAX_LONG_EDGE:-1280}"
@@ -93,7 +93,7 @@ export EMBEDDING_API_KEY="${EMBEDDING_API_KEY:-sk_your_api_key}"
 export EMBEDDING_MODEL="${EMBEDDING_MODEL:-text-embedding-3-large}"
 
 # ---------- vLLM (optional; when AGENT_LLM_BACKEND=vllm or local /v1 server is used) ---------- #
-export VLLM_MODEL="${VLLM_MODEL:-/mnt/shanhai-ai/qiuchenhao/data/checkpoints/huggingface/grpocheckpoints_seq-mean-token-mean-global_step_300/actor/}"
+export VLLM_MODEL="${VLLM_MODEL:-}"
 export VLLM_TENSOR_PARALLEL="${VLLM_TENSOR_PARALLEL:-1}"
 export VLLM_GPU_MEM_UTIL="${VLLM_GPU_MEM_UTIL:-0.9}"
 export VLLM_TEMPERATURE="${VLLM_TEMPERATURE:-0.1}"
@@ -103,7 +103,7 @@ export VLLM_MAX_TOKENS="${VLLM_MAX_TOKENS:-4096}"
 export TASK_TIMEOUT_SEC="${TASK_TIMEOUT_SEC:-1000}"
 
 # Runner params
-export PARQUET="${PARQUET:-/mnt/shanhai-ai/qiuchenhao/data/LVU/parquet/val_lvbench.parquet}"
+export PARQUET="${PARQUET:-}"
 export VIDEO_ID="${VIDEO_ID:-}"
 export MAX_STEPS="${MAX_STEPS:-16}"
 export SAVE_RUNS="${SAVE_RUNS:-${REPO_DIR}/data/trajectory_decoupled_time_notimereward/runs_lvbench_maxruns16_summary_topk30_gpt4o}"
