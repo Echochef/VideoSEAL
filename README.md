@@ -1,6 +1,6 @@
 <h1 align="center">🎬 VideoSEAL</h1>
 
-<h3 align="center">Separating Planning from Answer Authority for Agentic Long Video Understanding</h3>
+<h3 align="center">Mitigating Evidence Misalignment in Agentic Long Video Understanding by Decoupling Answer Authority</h3>
 
 <p align="center">
   <a href="https://huggingface.co/CewEhao/VideoSEAL_8B">
