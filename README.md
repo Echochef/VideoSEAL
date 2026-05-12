@@ -107,6 +107,6 @@ Launcher: `scripts/train/run_video_workflow_grpo.sh`
 ## 🙏 Acknowledgements
 
 VideoSEAL builds on excellent open-source work, including
-[`rllm`](https://github.com/agentica-project/rllm),
+[`rllm`](https://github.com/rllm-org/rllm),
 [`verl`](https://github.com/volcengine/verl),
 and the [video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) toolchain.
