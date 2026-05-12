@@ -15,7 +15,7 @@ import ipaddress
 
 from videoseal.tools.base import Tool, ToolOutput
 from videoseal.utils.agent.env import env_bool_strict, env_flag, require_env, require_float_env, require_int_env
-from videoseal.utils.agent.tool_agent_parsing import extract_between, parse_answer, parse_thinking, parse_tool_call_qwen
+from videoseal.utils.agent.tool_agent_parsing import extract_between, parse_thinking, parse_tool_call_qwen
 from videoseal.utils.agent.tool_schema import filter_args_for_forward, sanitize_args_against_schema
 from videoseal.utils.agent.trajectory import Step, Trajectory
 from videoseal.utils.api.mllm import MLLMClient
@@ -49,31 +49,72 @@ def _bool_env_or_default(name: str, default: bool) -> bool:
     return default
 
 
-def _system_prompt(lang: str) -> str:
-    if (lang or "").strip().lower().startswith("zh"):
+def _system_prompt() -> str:
+    return """You are a helper that answers multi-step video questions by sequentially invoking functions. Your ONLY job is to retrieve and refine candidate time spans; the final answer content must come from visual_inspect, not from your own imagination.
+
+Tool outputs are lossy and may miss details. Prefer improving coverage by:
+- trying different queries,
+- inspecting new / non-overlapping time spans,
+rather than re-running the same tool on the same spans.
+
+If you cannot find strong anchors after several retrieval attempts, you may switch to an exploration mode:
+- randomly sample a few large, non-overlapping time spans across the video,
+- send them to visual_inspect to discover where relevant evidence might be.
+
+Each turn, do exactly one of the following:
+
+* If further clues and evidence are needed:
+  Output EXACTLY one tool call:
+  <tool_call>{"name":"tool_name","arguments":{}}</tool_call>
+
+* If ready to finalize:
+  You may enter this branch ONLY if the immediately previous turn called visual_inspect and its output contains a clear, reliable verdict.
+  Output:
+  <final>final answer</final>
+
+Final Format
+- Multiple-choice -> ONLY the uppercase option letter(s), for example C. No extra words.
+
+Rules
+- One tool call only per turn. Exactly one tool call per turn, except final turn (no tool call).
+- You are a retriever, not an answerer: never invent answers; never override visual_inspect.
+- You MUST NOT conclude from any non-visual_inspect tool alone.
+- You may output <final> ONLY if the immediately previous turn was a visual_inspect call AND it returned a clear, reliable verdict.
+- If the last tool call is NOT visual_inspect, you MUST NOT output <final>; keep searching and then call visual_inspect.
+- The final answer must match the most recent reliable visual_inspect verdict (prefer the latest decisive visual_inspect when multiple exist).
+- Do NOT re-run the same tool on the same time spans just to get more info. Instead, broaden coverage via different queries and new spans, or use exploration mode with large non-overlapping spans.
+- If visual_inspect explicitly indicates that more search is needed, you MUST NOT finalize.
+- A good pattern is to alternate tools, for example: visual_retrieve -> visual_inspect -> visual_retrieve with a different query -> visual_inspect on different time spans -> final.
+- As soon as you have plausible spans, it is better to call visual_inspect again, possibly with more detailed context or slightly refined spans, than to keep doing blind retrieval. Multiple visual_inspect calls with different time spans are encouraged.
+- Always zero-pad time fields (HH:MM:SS).
+- Hard constraint: end_time must be strictly greater than start_time.
+
+Tool Calling Conventions
+- visual_retrieve: {"name":"visual_retrieve","arguments":{"query":"..."}}.
+  Use free-form natural language or short visual phrases related to the question to retrieve visually/scene-relevant regions and coarse time anchors from the unified visual index.
+- visual_inspect: {"name":"visual_inspect","arguments":{"spans":[{"start_time":"HH:MM:SS","end_time":"HH:MM:SS"}],"context":"Restate the original question and the visual sub-questions. Explain briefly why these spans were chosen, and provide a short look-for checklist of disambiguating cues to verify within these spans."}}.
+  Constraints: each span must satisfy end_time > start_time.
+"""
+
+
+def _parse_final_answer(text: str) -> Optional[str]:
+    fin = extract_between(text or "", "<final>", "</final>")
+    if fin:
+        return fin.strip()
+    return None
+
+
+def _tool_required_reminder(tool_names: List[str], *, api_messages: bool) -> str:
+    tools = ", ".join(tool_names) if tool_names else "the available tools"
+    if api_messages:
         return (
-            "你是一个视频问答助手。你只能通过调用工具来获得证据，不要凭空猜测。\n"
-            "可用工具：visual_retrieve, visual_inspect。\n\n"
-            "输出格式：\n"
-            "<thinking>...</thinking>\n"
-            "<tool_call>{\"name\": \"tool_name\", \"arguments\": {...}}</tool_call>\n"
-            "<answer>最终答案</answer>\n\n"
-            "规则：\n"
-            "- 优先用 visual_retrieve 找到可能相关的时间区间。\n"
-            "- 用 visual_inspect 在给定区间内做最终核验。\n"
-            "- 多选题只输出单个选项字母（A/B/C/D...）。\n"
+            "Your previous response was invalid: it did not contain a parsed tool call and did not contain <final>...</final>.\n"
+            f"You must call one available tool now using the tool-calling interface: {tools}. Do not answer in plain text."
         )
     return (
-        "You are a video question answering assistant. You MUST use tools for evidence and must not hallucinate.\n"
-        "Available tools: visual_retrieve, visual_inspect.\n\n"
-        "Output format:\n"
-        "<thinking>...</thinking>\n"
-        "<tool_call>{\"name\": \"tool_name\", \"arguments\": {...}}</tool_call>\n"
-        "<answer>final answer</answer>\n\n"
-        "Rules:\n"
-        "- Use visual_retrieve to find candidate time spans.\n"
-        "- Use visual_inspect to verify within specific spans.\n"
-        "- For multiple-choice questions, output a single option letter (A/B/C/D...).\n"
+        "Your previous response was invalid: it did not contain a parsed <tool_call>...</tool_call> and did not contain <final>...</final>.\n"
+        f"You must use one available tool now: {tools}.\n"
+        'Return exactly one tool call in this format: <tool_call>{"name": "tool_name", "arguments": {...}}</tool_call>. Do not answer in plain text.'
     )
 
 
@@ -211,12 +252,9 @@ class SimpleToolAgent:
         text = str(raw or "").strip()
         if not text:
             return ""
-        unwrapped = parse_answer(text)
+        unwrapped = _parse_final_answer(text)
         if unwrapped:
             return unwrapped.strip()
-        fin = extract_between(text, "<final>", "</final>")
-        if fin:
-            return fin.strip()
         return text
 
     def _forced_full_video_visual_inspect(self) -> Optional[str]:
@@ -307,8 +345,8 @@ class SimpleToolAgent:
         self._visual_index = str(visual_index or "") if visual_index else None
         self._prompt_type = int(prompt_type)
 
-        sys_lang = os.getenv("AGENT_SYS_PROMPT_LANG", "en")
-        system = (self.system_prompt_override or _system_prompt(sys_lang)).strip()
+        system = (self.system_prompt_override or _system_prompt()).strip()
+        tool_names = list((self.tools or {}).keys())
 
         tool_schemas = [cls().json for cls in (self.tools or {}).values()]
         tools_schema_text = json.dumps(tool_schemas, ensure_ascii=False)
@@ -445,20 +483,24 @@ class SimpleToolAgent:
                         # continue after tool execution
                         continue
 
-                    # No tool calls; treat as final answer attempt.
+                    # No OpenAI tool calls. Accept only a tagged final answer; otherwise remind and retry.
                     st = Step(chat_prompt=user_base, model_response=resp_text or "", usage=usage)
                     st.thinking = parse_thinking(resp_text or "")
                     self.traj.steps.append(st)
-                    ans = parse_answer(resp_text or "") or extract_between(resp_text or "", "<final>", "</final>") or str(resp_text or "").strip()
+                    ans = _parse_final_answer(resp_text or "")
                     if ans:
                         self.traj.answer = ans.strip()
                         if save_dir:
                             self._save_trajectory(save_dir)
                         return {"final": self.traj.answer, "answer": self.traj.answer, "steps": step_idx, "run_id": self.traj.run_id}
-                    self.traj.note = "empty response (no tool_calls/content)"
-                    if save_dir:
-                        self._save_trajectory(save_dir)
-                    return {"answer": None, "steps": step_idx, "note": self.traj.note, "run_id": self.traj.run_id}
+                    self.traj.note = "invalid response; reminded model to use a tool"
+                    api_history.append(
+                        {
+                            "role": "user",
+                            "content": _tool_required_reminder(tool_names, api_messages=True),
+                        }
+                    )
+                    continue
 
                 # Legacy mode: tag-based tool calling (<tool_call>...</tool_call>).
                 history_txt = "\n".join(tool_history_blocks) if tool_history_blocks else ""
@@ -509,12 +551,19 @@ class SimpleToolAgent:
                 continue
 
             self.traj.steps.append(st)
-            ans = parse_answer(resp_text) or extract_between(resp_text, "<final>", "</final>") or resp_text.strip()
+            ans = _parse_final_answer(resp_text)
             if ans:
                 self.traj.answer = ans.strip()
                 if save_dir:
                     self._save_trajectory(save_dir)
                 return {"final": self.traj.answer, "answer": self.traj.answer, "steps": step_idx, "run_id": self.traj.run_id}
+            self.traj.note = "invalid response; reminded model to use a tool"
+            tool_history_blocks.append(
+                "<format_feedback>"
+                + _tool_required_reminder(tool_names, api_messages=False)
+                + "</format_feedback>"
+            )
+            continue
 
         if env_flag("AGENT_ENABLE_MAX_STEP_VISUAL_INSPECT_FALLBACK", default=False):
             forced = self._forced_full_video_visual_inspect()

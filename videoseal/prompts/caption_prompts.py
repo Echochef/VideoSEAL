@@ -27,7 +27,7 @@ def default_caption_prompt_en(start_hms: str, end_hms: str) -> str:
 
 
 def get_caption_prompt(start_hms: str, end_hms: str, lang: str | None = None) -> str:
-    lang = (lang or os.getenv("RAG_PROMPT_LANG", "zh")).lower()
+    lang = (lang or os.getenv("RAG_PROMPT_LANG", "en")).lower()
     if lang == "en":
         return default_caption_prompt_en(start_hms, end_hms)
     # For now, default to English narrative to keep behavior stable across endpoints.

@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${REPO_DIR}"
 
-PYTHON="${PYTHON:-/root/miniconda3/envs/rllm/bin/python}"
+PYTHON="${PYTHON:-python}"
 
 export PYTHONPATH="${PYTHONPATH:-}:$REPO_DIR"
 
@@ -56,7 +56,7 @@ export INSPECT_GLOBAL_ORDER="${INSPECT_GLOBAL_ORDER:-1}" # Preserve global time 
 
 # ---------- Tool: visual_inspect ---------- #
 export VISUAL_INSPECT_BACKEND="${VISUAL_INSPECT_BACKEND:-openai}"
-export VISUAL_INSPECT_API_BASE="${VISUAL_INSPECT_API_BASE:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+export VISUAL_INSPECT_API_BASE="${VISUAL_INSPECT_API_BASE:-https://api.openai.com/v1}"
 export VISUAL_INSPECT_API_KEY="${VISUAL_INSPECT_API_KEY:-sk_your_api_key}"
 export VISUAL_INSPECT_MODEL="${VISUAL_INSPECT_MODEL:-qwen2.5-vl-7b-instruct}"
 export VISUAL_INSPECT_MAX_LONG_EDGE="${VISUAL_INSPECT_MAX_LONG_EDGE:-${INSPECT_MAX_LONG_EDGE}}"
@@ -75,7 +75,7 @@ export RLLM_ENABLE_LAST_STEP_VISUAL_INSPECT_FALLBACK="${RLLM_ENABLE_LAST_STEP_VI
 export VISUAL_INDEX_DIR="${VISUAL_INDEX_DIR:-}" # Unified semantic index root for visual_retrieve (per-video directory).
 
 # Embedding backend for visual_retrieve (OpenAI-compatible embeddings endpoint).
-export EMBEDDING_API_BASE="${EMBEDDING_API_BASE:-https://api.yuboar.com/v1}"
+export EMBEDDING_API_BASE="${EMBEDDING_API_BASE:-https://api.openai.com/v1}"
 export EMBEDDING_API_KEY="${EMBEDDING_API_KEY:-sk_your_api_key}"
 export EMBEDDING_MODEL="${EMBEDDING_MODEL:-text-embedding-3-large}" # Text embedding model (must match index meta).
 export EMBED_TIMEOUT="${EMBED_TIMEOUT:-60}"
@@ -114,12 +114,12 @@ export VISUAL_RETRIEVE_SUM_MAX_TOKENS="${VISUAL_RETRIEVE_SUM_MAX_TOKENS:-800}"
 # export VIDEO_REWARD_ZERO_ON_SEARCH_MORE="${VIDEO_REWARD_ZERO_ON_SEARCH_MORE:-1}" # If 1: zero reward when last visual_inspect says SEARCH_MORE.
 # export VIDEO_REWARD_ZERO_ON_LAST_NOT_VISUAL_INSPECT="${VIDEO_REWARD_ZERO_ON_LAST_NOT_VISUAL_INSPECT:-1}" # If 1: zero reward when last tool is not visual_inspect.
 # export VIDEO_REWARD_VISUAL_GATE_MODE="${VIDEO_REWARD_VISUAL_GATE_MODE:-soft}" # Gate final correctness by visual IoU: soft | hard.
-# 对照实验 gt reward only
-export VIDEO_REWARD_FINAL_WEIGHT="${VIDEO_REWARD_FINAL_WEIGHT:-0.9}" # Weight: final correctness (ROUGE-L / MCQ exact match).
+# Ablation: gt-reward only
+export VIDEO_REWARD_FINAL_WEIGHT="${VIDEO_REWARD_FINAL_WEIGHT:-1.0}" # Weight: final correctness (ROUGE-L / MCQ exact match).
 export VIDEO_REWARD_TOOL_HIT_WEIGHT="${VIDEO_REWARD_TOOL_HIT_WEIGHT:-0.0}" # Weight: tool hit F1.
 export VIDEO_REWARD_VISUAL_INSPECT_WEIGHT="${VIDEO_REWARD_VISUAL_INSPECT_WEIGHT:-0.0}" # Weight: visual_inspect IoU score.
 export VIDEO_REWARD_JUDGE_WEIGHT="${VIDEO_REWARD_JUDGE_WEIGHT:-0.0}" # Weight: LLM-as-judge score.
-export VIDEO_REWARD_FORMAT_WEIGHT="${VIDEO_REWARD_FORMAT_WEIGHT:-0.1}" # Weight: format compliance.
+export VIDEO_REWARD_FORMAT_WEIGHT="${VIDEO_REWARD_FORMAT_WEIGHT:-0.0}" # Weight: format compliance.
 export VIDEO_REWARD_ZERO_ON_SEARCH_MORE="${VIDEO_REWARD_ZERO_ON_SEARCH_MORE:-0}" # If 1: zero reward when last visual_inspect says SEARCH_MORE.
 export VIDEO_REWARD_ZERO_ON_LAST_NOT_VISUAL_INSPECT="${VIDEO_REWARD_ZERO_ON_LAST_NOT_VISUAL_INSPECT:-0}" # If 1: zero reward when last tool is not visual_inspect.
 export VIDEO_REWARD_VISUAL_GATE_MODE="${VIDEO_REWARD_VISUAL_GATE_MODE:-none}" # Gate final correctness by visual IoU: soft | hard.
@@ -137,7 +137,7 @@ export LLM_JUDGE_TEMPERATURE="${LLM_JUDGE_TEMPERATURE:-0}" # Judge sampling temp
 export LLM_JUDGE_MAX_TOKENS="${LLM_JUDGE_MAX_TOKENS:-2048}" # Judge max tokens.
 export LLM_JUDGE_SYSTEM_PROMPT_FILE="${LLM_JUDGE_SYSTEM_PROMPT_FILE:-${REPO_DIR}/rllm/agents/llm_judge_prompt.txt}" # Judge system prompt file.
 
-# Reward shaping (PRM 四象限 + step-wise)
+# Reward shaping (PRM four-quadrant + step-wise)
 # export PRM_R_CORRECT_GROUNDED="${PRM_R_CORRECT_GROUNDED:-0.7}"
 # export PRM_R_WRONG_GROUNDED="${PRM_R_WRONG_GROUNDED:-0.4}"
 # export PRM_R_CORRECT_UNGROUNDED="${PRM_R_CORRECT_UNGROUNDED:-0.2}"
@@ -150,29 +150,29 @@ export LLM_JUDGE_SYSTEM_PROMPT_FILE="${LLM_JUDGE_SYSTEM_PROMPT_FILE:-${REPO_DIR}
 # export PRM_STEP_COST="${PRM_STEP_COST:-0.0}"
 # export PRM_STEP_DUP_PENALTY="${PRM_STEP_DUP_PENALTY:-0.0}"
 
-# 开放题正确判定阈值（ROUGE-L）
+# Open-ended QA correctness threshold (ROUGE-L)
 export VIDEO_OPEN_MATCH_THRESH="${VIDEO_OPEN_MATCH_THRESH:-0.7}"
 
 
-# Training sizes / PPO 超参
-export NNODES="${NNODES:-1}"                       # 节点数
-export NGPUS="${NGPUS:-8}"                         # 每节点 GPU 数
-export TRAIN_BSZ="${TRAIN_BSZ:-32}"                # 训练 batch size
-export VAL_BSZ="${VAL_BSZ:-64}"                    # 验证 batch size
-export SAMPLES_PER_PROMPT="${SAMPLES_PER_PROMPT:-4}" # 每样本生成候选数
-export TP_SIZE="${TP_SIZE:-2}"                     # 张量并行
-export TEMP="${TEMP:-0.7}"                         # 训练温度
-export VAL_TEMP="${VAL_TEMP:-0.0}"                 # 验证温度
-export GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.7}"         # vLLM 显存利用率
-export PPO_MINI_BSZ="${PPO_MINI_BSZ:-8}"           # PPO mini-batch
-export PPO_MICRO_BSZ="${PPO_MICRO_BSZ:-8}"         # PPO micro-batch
-export MAX_PROMPT_LEN="${MAX_PROMPT_LEN:-2048}"    # 最大 prompt 长度
-export MAX_RESPONSE_LEN="${MAX_RESPONSE_LEN:-32768}" # 最大回复长度
+# Training sizes / PPO hyperparameters
+export NNODES="${NNODES:-1}"                       # Number of nodes.
+export NGPUS="${NGPUS:-8}"                         # GPUs per node.
+export TRAIN_BSZ="${TRAIN_BSZ:-32}"                # Training batch size.
+export VAL_BSZ="${VAL_BSZ:-64}"                    # Validation batch size.
+export SAMPLES_PER_PROMPT="${SAMPLES_PER_PROMPT:-4}" # Candidates sampled per prompt.
+export TP_SIZE="${TP_SIZE:-2}"                     # Tensor-parallel size.
+export TEMP="${TEMP:-0.7}"                         # Training sampling temperature.
+export VAL_TEMP="${VAL_TEMP:-0.0}"                 # Validation sampling temperature.
+export GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.7}"         # vLLM GPU memory utilization.
+export PPO_MINI_BSZ="${PPO_MINI_BSZ:-8}"           # PPO mini-batch.
+export PPO_MICRO_BSZ="${PPO_MICRO_BSZ:-8}"         # PPO micro-batch.
+export MAX_PROMPT_LEN="${MAX_PROMPT_LEN:-2048}"    # Max prompt length (tokens).
+export MAX_RESPONSE_LEN="${MAX_RESPONSE_LEN:-32768}" # Max response length (tokens).
 export PPO_MAX_TOKENS_PER_GPU="${PPO_MAX_TOKENS_PER_GPU:-$((MAX_PROMPT_LEN + MAX_RESPONSE_LEN + 2048))}" # vLLM max batched tokens per GPU.
-export MAX_STEPS="${MAX_STEPS:-13}"                # 每轮最大 tool 步数
-export TRAJ_TIMEOUT_SEC="${TRAJ_TIMEOUT_SEC:-300}" # 轨迹超时(秒)
-export TOTAL_EPOCHS="${TOTAL_EPOCHS:-1}"           # 总 epoch 数
-export WORKFLOW_N_PARALLEL_TASKS="${WORKFLOW_N_PARALLEL_TASKS:-64}" # 并行轨迹数
+export MAX_STEPS="${MAX_STEPS:-13}"                # Max tool steps per trajectory.
+export TRAJ_TIMEOUT_SEC="${TRAJ_TIMEOUT_SEC:-300}" # Trajectory timeout (seconds).
+export TOTAL_EPOCHS="${TOTAL_EPOCHS:-1}"           # Total training epochs.
+export WORKFLOW_N_PARALLEL_TASKS="${WORKFLOW_N_PARALLEL_TASKS:-64}" # Parallel rollouts.
 
 # Output dirs / logging
 export ROLLOUT_OUTDIR="${ROLLOUT_OUTDIR:-${REPO_DIR}/data/grpo/rollouts}" # Rollout/episode logs.
@@ -229,7 +229,7 @@ if [[ -z "${TRAIN_PARQUET}" || "${TRAIN_PARQUET}" == "[]" ]]; then
   echo "[ERR] Missing TRAIN_PARQUET. Example: TRAIN_PARQUET='[\"./data/train.parquet\"]'" >&2
   exit 2
 fi
-# data.max_prompt_length控制训练时候PPO的长度 actor_rollout_ref.rollout控制rollout长度
+# data.max_prompt_length controls PPO prompt length; actor_rollout_ref.rollout controls rollout length.
 "${PYTHON}" scripts/train_video_workflow_grpo.py \
   algorithm.adv_estimator=grpo \
   data.train_files="${TRAIN_PARQUET}" \

@@ -1,91 +1,112 @@
-<h2 align="center">🎬 VideoSEAL: Separating Planning from Answer Authority for Agentic Long Video Understanding</h2>
+<h1 align="center">🎬 VideoSEAL</h1>
+
+<h3 align="center">Separating Planning from Answer Authority for Agentic Long Video Understanding</h3>
 
 <p align="center">
-  🤗 HuggingFace model:
-  <a href="https://huggingface.co/Echo23333456/VideoSEAL_8B">Echo23333456/VideoSEAL_8B</a>
+  <a href="https://huggingface.co/CewEhao/VideoSEAL_8B">
+    <img alt="HuggingFace Model" src="https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-VideoSEAL__8B-yellow">
+  </a>
+  <a href="#-citation">
+    <img alt="ICML 2026" src="https://img.shields.io/badge/ICML-2026-blue">
+  </a>
+  <a href="https://github.com/Echochef/VideoSeal">
+    <img alt="Code" src="https://img.shields.io/badge/Code-GitHub-black?logo=github">
+  </a>
 </p>
 
-## 👉 Introduction
+<p align="center">
+  Official implementation of <b>VideoSEAL</b>, an agentic framework for long-video understanding that
+  decouples <i>planning</i> (which evidence to gather) from <i>answer authority</i> (what the answer is).
+</p>
 
-This is the official code for **VideoSEAL: Separating Planning from Answer Authority for Agentic Long Video Understanding**.
+---
 
-Videoseal provides offline build utilities for long video indexing:
+## 📰 News
 
-- OCR subtitles (SRT) → OCR captions + (optional) embeddings
-- Clip captions (VLM) → clip captions + (optional) embeddings
-- Merge into a unified semantic index under `indexes/semantic/<video_id>/`
-- (Optional) generate a global `full_story.txt` summary
+- **`2026-05-01`** &nbsp;🎉 Our paper **VideoSEAL** has been **accepted to ICML 2026**!
+- **`2026-01-27`** &nbsp;🚀 Initial release of code and the [`VideoSEAL-8B`](https://huggingface.co/CewEhao/VideoSEAL_8B) checkpoint.
 
-## 📦 Layout
+## 📖 Overview
 
-- 🧰 Shell entrypoints: `scripts/`
-- 🐍 Python package: `videoseal/`
-- ✅ Tests: `test/`
-- 🧩 OCR toolchain (vendored): `third_party/video-subtitle-extractor/`
+VideoSEAL is an agentic pipeline for long-video question answering. It separates the *planner* role
+(deciding what to look at) from the *answerer* role (judging the evidence), and trains both with GRPO
+over a tool-augmented rollout.
 
-## ⚙️ Configuration
+The repository covers the full stack:
 
-- Defaults live in the scripts under `scripts/`.
-- Put real API keys/endpoints in your shell environment / job launcher.
+- 🧱 **Offline build** — convert raw videos into a unified semantic index under `indexes/semantic/<video_id>/`
+- 🛠️ **Tool-using agent** — OCR-subtitle search, clip captioning, and visual inspection
+- 🏋️ **GRPO training** — reproducible recipe built on vendored `rllm` + `verl`
+- 📦 **Reference checkpoint** — `VideoSEAL-8B` on HuggingFace
 
-## 🏗️ Run offline build
+Index components:
 
-```bash
-cd /path/to/Videoseal
+- OCR subtitles (SRT) &rarr; OCR captions (+ optional embeddings)
+- Clip captions (VLM) &rarr; clip captions (+ optional embeddings)
+- A unified semantic index merged across modalities
+- (Optional) a global `full_story.txt` summary
 
-export MLLM_API_KEY="sk_your_api_key"
-export EMBEDDING_API_KEY="sk_your_api_key"
-export AGENT_LLM_API_KEY="sk_your_api_key"
-export VISUAL_INSPECT_API_KEY="sk_your_api_key"
-VIDEO=/path/to/video.mp4 BENCHMARK=LVBench ./scripts/run_offline_build.sh
-```
+## 🗂️ Repository Layout
 
-## ✅ Run tests
+| Path | Description |
+| --- | --- |
+| `videoseal/` | Core Python package: agents, runners, CLI, utils |
+| `scripts/` | Shell entrypoints for offline build, serving, and training |
+| `rllm/`, `verl/` | Vendored RL libraries for the GRPO workflow |
+| `third_party/video-subtitle-extractor/` | Vendored OCR toolchain |
 
-```bash
-/root/miniconda3/envs/rllm/bin/python -m unittest discover -s test -v
-```
+## 🚀 Quick Start
 
-## 🏋️ GRPO training (video tool workflow)
-
-This repo vendors a minimal copy of the `rllm/` + `verl/` Python packages (under the repo root)
-to make the video tool-agent GRPO workflow runnable without an extra repo checkout.
-
-### 🧪 Training environment (conda)
+### 1. Environment
 
 ```bash
-conda create -n videosearl python=3.12 -y
-conda activate videosearl
+conda create -n videoseal python=3.12 -y
+conda activate videoseal
 
 pip install vllm==0.11.0
-
-cd rllm
-pip install -e .
-
-cd ../verl
-pip install -e .
+pip install -e ./rllm
+pip install -e ./verl
 ```
 
-### 🚀 Launcher
+### 2. API keys
 
-- `scripts/train/run_video_workflow_grpo.sh`
+Export endpoints in your shell or job launcher — defaults live in `scripts/`.
 
-### 🧩 Example
+```bash
+export MLLM_API_KEY="sk_..."
+export EMBEDDING_API_KEY="sk_..."
+export AGENT_LLM_API_KEY="sk_..."
+export VISUAL_INSPECT_API_KEY="sk_..."
+```
+
+### 3. Offline build
 
 ```bash
 cd /path/to/Videoseal
 
-# Export real API keys/endpoints in your environment before launching.
+VIDEO=/path/to/video.mp4 \
+BENCHMARK=LVBench \
+  ./scripts/run_offline_build.sh
+```
+
+## 🏋️ GRPO Training
+
+The video tool-agent GRPO workflow runs out of the box thanks to the vendored `rllm` + `verl`.
+
+```bash
+cd /path/to/Videoseal
 
 TRAIN_PARQUET='["/path/to/train.parquet"]' \
 VAL_PARQUET='/path/to/val.parquet' \
 MODEL_PATH='Qwen/Qwen3-8B' \
-./scripts/train/run_video_workflow_grpo.sh train
+  ./scripts/train/run_video_workflow_grpo.sh train
 ```
 
-### 🔎 Quick checks
+Launcher: `scripts/train/run_video_workflow_grpo.sh`
 
-```bash
-./scripts/train/run_video_workflow_grpo.sh test-reward
-pytest -q tests/rewards/test_video_reward_tool_env_integration.py
-```
+## 🙏 Acknowledgements
+
+VideoSEAL builds on excellent open-source work, including
+[`rllm`](https://github.com/agentica-project/rllm),
+[`verl`](https://github.com/volcengine/verl),
+and the [video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) toolchain.

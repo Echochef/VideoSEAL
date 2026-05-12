@@ -4,32 +4,28 @@ set -euo pipefail
 # Parquet batch runner (Videoseal).
 #
 # Environment variables are intentionally kept in this script for quick editing.
-# The list below mirrors the conventions in:
-#   DynamicvideoAgentRL/scripts/run_vllm_from_jsonl.sh
-#
 # Note: put real secrets in your shell environment / job launcher, not in this file.
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Preferred Python for this machine (override via env).
-export PYTHON="${PYTHON:-/root/miniconda3/envs/rllm/bin/python}"
+export PYTHON="${PYTHON:-python}"
 
-# Data root (LVU unified layout on this machine).
+# Data root. Override this in your environment for local datasets.
 export DEFAULT_DATA_ROOT="${DEFAULT_DATA_ROOT:-${REPO_DIR}/data}"
 
 # ---------- Retrieve / Inspect knobs ---------- #
 export INSPECT_MAX_LONG_EDGE="${INSPECT_MAX_LONG_EDGE:-1280}"
-export INSPECT_VLM_MAX_TOKENS="${INSPECT_VLM_MAX_TOKENS:-2048}"
+export INSPECT_VLM_MAX_TOKENS="${INSPECT_VLM_MAX_TOKENS:-4096}"
 export INSPECT_VLM_TEMPERATURE="${INSPECT_VLM_TEMPERATURE:-0.1}"
 export INSPECT_MAX_TOTAL_IMAGES="${INSPECT_MAX_TOTAL_IMAGES:-64}"
-export INSPECT_FPS="${INSPECT_FPS:-1}"
+export INSPECT_FPS="${INSPECT_FPS:-2}"
 export SEMANTIC_RETRIEVE_TOPK="${SEMANTIC_RETRIEVE_TOPK:-40}"
 
 export VISUAL_RETRIEVE_TOPK="${VISUAL_RETRIEVE_TOPK:-30}"
 export RETRIEVE_SUMMARY_MAX_SPANS="${RETRIEVE_SUMMARY_MAX_SPANS:-100}"
 export RETRIEVE_SUMMARY_ENABLED="${RETRIEVE_SUMMARY_ENABLED:-1}"
 
-export AGENT_SYS_PROMPT_LANG="${AGENT_SYS_PROMPT_LANG:-en}"
 export BENCHMARK="${BENCHMARK:-lvbench}"
 export SEMANTIC_RETRIEVE_MIX="${SEMANTIC_RETRIEVE_MIX:-embed}"
 export RETRIEVE_EMBED_WEIGHT="${RETRIEVE_EMBED_WEIGHT:-0.8}"
@@ -50,22 +46,27 @@ export AGENT_LLM_API_KEY="${AGENT_LLM_API_KEY:-sk_your_api_key}"
 export AGENT_LLM_MODEL="${AGENT_LLM_MODEL:-google/gemini-3-flash-preview}"
 export AGENT_LLM_MAX_TOKENS="${AGENT_LLM_MAX_TOKENS:-2048}"
 export AGENT_LLM_TEMPERATURE="${AGENT_LLM_TEMPERATURE:-0.0}"
+_AGENT_LLM_TIMEOUT_WAS_SET=0
+if [[ -n "${AGENT_LLM_TIMEOUT+x}" ]]; then
+  _AGENT_LLM_TIMEOUT_WAS_SET=1
+fi
 export AGENT_LLM_TIMEOUT="${AGENT_LLM_TIMEOUT:-60}"
+export AGENT_LLM_TIMEOUT_WAS_SET="${_AGENT_LLM_TIMEOUT_WAS_SET}"
 export AGENT_MLLM_BACKEND="${AGENT_MLLM_BACKEND:-openai}"
 
 # ---------- Tool-side VLM (visual_inspect) ---------- #
 export VISUAL_INSPECT_BACKEND="${VISUAL_INSPECT_BACKEND:-openai}"
-export VISUAL_INSPECT_API_BASE="${VISUAL_INSPECT_API_BASE:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+export VISUAL_INSPECT_API_BASE="${VISUAL_INSPECT_API_BASE:-https://openrouter.ai/api/v1}"
 export VISUAL_INSPECT_API_KEY="${VISUAL_INSPECT_API_KEY:-sk_your_api_key}"
-export VISUAL_INSPECT_MODEL="${VISUAL_INSPECT_MODEL:-qwen2.5-vl-7b-instruct}"
+export VISUAL_INSPECT_MODEL="${VISUAL_INSPECT_MODEL:-moonshotai/kimi-k2.5}"
 
 # Retrieval summarizer (optional; used when summary is enabled).
 export VISUAL_RETRIEVE_SUM_BACKEND="${VISUAL_RETRIEVE_SUM_BACKEND:-${VISUAL_INSPECT_BACKEND}}"
-export VISUAL_RETRIEVE_SUM_API_BASE="${VISUAL_RETRIEVE_SUM_API_BASE:-${VISUAL_INSPECT_API_BASE}}"
+export VISUAL_RETRIEVE_SUM_API_BASE="${VISUAL_RETRIEVE_SUM_API_BASE:-https://openrouter.ai/api/v1}"
 export VISUAL_RETRIEVE_SUM_API_KEY="${VISUAL_RETRIEVE_SUM_API_KEY:-${VISUAL_INSPECT_API_KEY}}"
-export VISUAL_RETRIEVE_SUM_MODEL="${VISUAL_RETRIEVE_SUM_MODEL:-${VISUAL_INSPECT_MODEL}}"
+export VISUAL_RETRIEVE_SUM_MODEL="${VISUAL_RETRIEVE_SUM_MODEL:-deepseek/deepseek-v3.2}"
 export VISUAL_RETRIEVE_SUM_TEMPERATURE="${VISUAL_RETRIEVE_SUM_TEMPERATURE:-0.01}"
-export VISUAL_RETRIEVE_SUM_MAX_TOKENS="${VISUAL_RETRIEVE_SUM_MAX_TOKENS:-800}"
+export VISUAL_RETRIEVE_SUM_MAX_TOKENS="${VISUAL_RETRIEVE_SUM_MAX_TOKENS:-4096}"
 
 # Dynamic visual_inspect resolution.
 export VISUAL_INSPECT_MAX_LONG_EDGE="${VISUAL_INSPECT_MAX_LONG_EDGE:-1280}"
@@ -77,9 +78,9 @@ export VISUAL_INSPECT_EDGE_MULTIPLE="${VISUAL_INSPECT_EDGE_MULTIPLE:-32}"
 # Prefer tmpfs for high-concurrency frame extraction/cleanup; fall back to /tmp.
 if [[ -z "${FRAMES_ROOT:-}" ]]; then
   if [[ -d /dev/shm && -w /dev/shm ]]; then
-    export FRAMES_ROOT=/dev/shm/dva_frames
+    export FRAMES_ROOT=/dev/shm/videoseal_frames
   else
-    export FRAMES_ROOT=/tmp/dva_frames
+    export FRAMES_ROOT=/tmp/videoseal_frames
   fi
 else
   export FRAMES_ROOT
@@ -88,12 +89,12 @@ export CLEAN_FRAMES="${CLEAN_FRAMES:-0}"
 export CLEAN_FRAMES_ASYNC="${CLEAN_FRAMES_ASYNC:-1}"
 
 # ---------- Embedding API (OpenAI-compatible embeddings) ---------- #
-export EMBEDDING_API_BASE="${EMBEDDING_API_BASE:-https://api.yuboar.com/v1}"
+export EMBEDDING_API_BASE="${EMBEDDING_API_BASE:-https://api.openai.com/v1}"
 export EMBEDDING_API_KEY="${EMBEDDING_API_KEY:-sk_your_api_key}"
 export EMBEDDING_MODEL="${EMBEDDING_MODEL:-text-embedding-3-large}"
 
 # ---------- vLLM (optional; when AGENT_LLM_BACKEND=vllm or local /v1 server is used) ---------- #
-export VLLM_MODEL="${VLLM_MODEL:-}"
+export VLLM_MODEL="${VLLM_MODEL:-Qwen/Qwen3-8B}"
 export VLLM_TENSOR_PARALLEL="${VLLM_TENSOR_PARALLEL:-1}"
 export VLLM_GPU_MEM_UTIL="${VLLM_GPU_MEM_UTIL:-0.9}"
 export VLLM_TEMPERATURE="${VLLM_TEMPERATURE:-0.1}"
@@ -106,7 +107,7 @@ export TASK_TIMEOUT_SEC="${TASK_TIMEOUT_SEC:-1000}"
 export PARQUET="${PARQUET:-}"
 export VIDEO_ID="${VIDEO_ID:-}"
 export MAX_STEPS="${MAX_STEPS:-16}"
-export SAVE_RUNS="${SAVE_RUNS:-${REPO_DIR}/data/trajectory_decoupled_time_notimereward/runs_lvbench_maxruns16_summary_topk30_gpt4o}"
+export SAVE_RUNS="${SAVE_RUNS:-${REPO_DIR}/runs}"
 export CONCURRENCY="${CONCURRENCY:-64}"
 export CONCURRENCY_PER_SHARD="${CONCURRENCY_PER_SHARD:-}"
 

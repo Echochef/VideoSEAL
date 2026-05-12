@@ -144,7 +144,7 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
 
     ap = argparse.ArgumentParser(description="Offline build batch runner (OCR + clip -> semantic index + optional summary).")
-    ap.add_argument("--python", default=os.getenv("PYTHON", "/root/miniconda3/envs/rllm/bin/python"))
+    ap.add_argument("--python", default=os.getenv("PYTHON", "python"))
     ap.add_argument("--video", default=os.getenv("VIDEO", ""), help="Video file path or a directory of videos.")
     ap.add_argument("--benchmark", default=os.getenv("BENCHMARK", ""))
     ap.add_argument("--video-id", default=os.getenv("VIDEO_ID", ""))

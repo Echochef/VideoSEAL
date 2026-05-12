@@ -16,7 +16,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-export PYTHON="${PYTHON:-/root/miniconda3/envs/rllm/bin/python}"
+export PYTHON="${PYTHON:-python}"
 export DEFAULT_DATA_ROOT="${DEFAULT_DATA_ROOT:-${REPO_DIR}/data}"
 
 export BENCHMARK="${BENCHMARK:-LVBench}"
@@ -53,7 +53,7 @@ export SKIP_OCR_EMBED="${SKIP_OCR_EMBED:-1}"
 
 # Clip caption VLM (OpenAI-compatible by default).
 export MLLM_BACKEND="${MLLM_BACKEND:-openai}"
-export MLLM_API_BASE="${MLLM_API_BASE:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+export MLLM_API_BASE="${MLLM_API_BASE:-https://api.openai.com/v1}"
 export MLLM_API_KEY="${MLLM_API_KEY:-sk_your_api_key}"
 export MLLM_MODEL="${MLLM_MODEL:-qwen2.5-vl-7b-instruct}"
 export MLLM_MAX_TOKENS="${MLLM_MAX_TOKENS:-4096}"
@@ -62,7 +62,7 @@ export MLLM_RETRY_TIMES="${MLLM_RETRY_TIMES:-3}"
 export MLLM_RETRY_DELAY="${MLLM_RETRY_DELAY:-30}"
 
 # Embeddings (OpenAI-compatible).
-export EMBEDDING_API_BASE="${EMBEDDING_API_BASE:-https://api.yuboar.com/v1}"
+export EMBEDDING_API_BASE="${EMBEDDING_API_BASE:-https://api.openai.com/v1}"
 export EMBEDDING_API_KEY="${EMBEDDING_API_KEY:-sk_your_api_key}"
 export EMBEDDING_MODEL="${EMBEDDING_MODEL:-text-embedding-3-large}"
 

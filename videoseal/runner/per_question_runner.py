@@ -293,7 +293,7 @@ def main() -> int:
     ap.add_argument("--shard-index", type=int, default=None)
     ap.add_argument("--num-shards", type=int, default=None)
     ap.add_argument("--no-aggregate", action="store_true")
-    ap.add_argument("--cn-prompt", type=int, default=0, choices=[0, 1, 2])
+    ap.add_argument("--prompt-variant", type=int, default=0, choices=[0, 1, 2], help="Prompt template variant index (0 = default).")
     ap.add_argument("--skip-existing", action="store_true")
     ap.add_argument("--task-timeout-sec", type=float, default=float(os.getenv("TASK_TIMEOUT_SEC", "0") or "0"))
     args = ap.parse_args()
@@ -387,7 +387,7 @@ def main() -> int:
                             "task": t,
                             "save_root": runs_root.as_posix(),
                             "max_steps": int(args.max_steps),
-                            "prompt_type": int(args.cn_prompt),
+                            "prompt_type": int(args.prompt_variant),
                             "result_queue": result_q,
                         },
                     )
@@ -429,7 +429,7 @@ def main() -> int:
                 running.pop(pid, None)
     else:
         with ProcessPoolExecutor(max_workers=max_workers, mp_context=mp_ctx) as ex:
-            futs = [ex.submit(_run_one_task, t, save_root=runs_root, max_steps=int(args.max_steps), prompt_type=int(args.cn_prompt)) for t in tasks]
+            futs = [ex.submit(_run_one_task, t, save_root=runs_root, max_steps=int(args.max_steps), prompt_type=int(args.prompt_variant)) for t in tasks]
             for fut in as_completed(futs):
                 try:
                     vid, uid, pred = fut.result()

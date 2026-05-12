@@ -20,14 +20,13 @@ def parse_choice_letter(answer_text: str) -> Optional[str]:
             if m:
                 raw = m.group(1)
 
-    table = str.maketrans({"（": "(", "）": ")", "【": "[", "】": "]", "：": ":", "，": ","})
-    text = str(raw).strip().translate(table)
+    text = str(raw).strip()
 
     m = re.search(r"(?:\*\*)?\s*[\(\[]\s*([A-Za-z])\s*[\)\]]\s*(?:\*\*)?", text, re.IGNORECASE)
     if m:
         return m.group(1).upper()
     m = re.search(
-        r"(?:选|答案|选项|option|answer|choice|selected|select|choose)\s*(?:is)?\s*(?:[:：])?\s*([A-Za-z])(?=\b|[\)\]\s,.;:，。；：]|$)",
+        r"(?:option|answer|choice|selected|select|choose)\s*(?:is)?\s*:?\s*([A-Za-z])(?=\b|[\)\]\s,.;:]|$)",
         text,
         re.IGNORECASE,
     )
@@ -41,9 +40,7 @@ def parse_choice_letter(answer_text: str) -> Optional[str]:
 
 
 def _normalize_text(s: str) -> str:
-    table = str.maketrans({"（": "(", "）": ")", "【": "[", "】": "]", "：": ":", "，": ",", "“": '"', "”": '"', "‘": "'", "’": "'"})
-    s = str(s).translate(table)
-    s = s.replace("&", " and ").replace("＋", "+").replace("、", " and ")
+    s = str(s).replace("&", " and ")
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
@@ -51,7 +48,7 @@ def _normalize_text(s: str) -> str:
 def _extract_options(question_text: str) -> Dict[str, str]:
     q = _normalize_text(question_text)
     spans: List[Tuple[str, int, int]] = []
-    for m in re.finditer(r"\(([A-Za-z])\)|\[([A-Za-z])\]|\b([A-Za-z])[\)\.:：、]\s*", q):
+    for m in re.finditer(r"\(([A-Za-z])\)|\[([A-Za-z])\]|\b([A-Za-z])[\)\.:]\s*", q):
         letter = None
         for gi in range(1, 4):
             if m.group(gi):
@@ -61,7 +58,7 @@ def _extract_options(question_text: str) -> Dict[str, str]:
             continue
         spans.append((letter.upper(), m.start(), m.end()))
     if len(spans) < 2:
-        for m in re.finditer(r"(?m)^(?:\(|\[)?([A-Za-z])(?:\)|\])?[\)\.:：、]\s+", q):
+        for m in re.finditer(r"(?m)^(?:\(|\[)?([A-Za-z])(?:\)|\])?[\)\.:]\s+", q):
             spans.append((m.group(1).upper(), m.start(), m.end()))
     mapping: Dict[str, str] = {}
     spans.sort(key=lambda x: x[1])

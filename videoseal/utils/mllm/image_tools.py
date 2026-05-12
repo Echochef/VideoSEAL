@@ -97,9 +97,11 @@ def _sample_clip_frames(
 
 
 class VideoClipCaptionTool(Tool):
-    """
-    纯视觉多模态描述工具：读取视频某一时间段，抽帧后调用多模态 LLM 生成实体与片段文字描述（不使用字幕）。
-    输出建议为 JSON 字符串，包含：clip_start_time, clip_end_time, entities[], clip_description。
+    """Visual-only clip captioning tool.
+
+    Reads frames from a given video interval (no subtitles/audio) and calls a multimodal
+    LLM to produce entities and a clip-level visual description. The model is asked to
+    return a JSON string with keys: clip_start_time, clip_end_time, entities[], clip_description.
     """
 
     def __init__(self, name: str = "video_clip_caption", description: str | None = None, client: Optional[MLLMClient] = None):
@@ -144,7 +146,7 @@ class VideoClipCaptionTool(Tool):
             prompt = default_caption_prompt(sec_to_hhmmss(start_sec), sec_to_hhmmss(end_sec))
             backend = os.getenv("MLLM_BACKEND", "openai").lower()
             if backend in ("dashscope", "qwen", "qwen_mm"):
-                # dashscope：直接传帧路径
+                # dashscope: pass frame file paths directly to the client
                 paths, _ = sample_uniform_frames(
                     video_path,
                     float(start_sec),

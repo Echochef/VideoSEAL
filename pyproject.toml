@@ -4,9 +4,38 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "videoseal"
-version = "0.0.0"
-description = "Offline video build utilities (OCR + clip captions -> semantic index)."
+version = "0.1.0"
+description = "VideoSEAL: Separating Planning from Answer Authority for Agentic Long Video Understanding (ICML 2026)."
+readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "qiuchenhao", email = "1226309312qch@gmail.com" }
+]
+keywords = [
+  "long-video-understanding",
+  "agentic",
+  "video-qa",
+  "grpo",
+  "reinforcement-learning",
+  "vision-language-model",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://github.com/Echochef/VideoSeal"
+Repository = "https://github.com/Echochef/VideoSeal"
+"Model (HuggingFace)" = "https://huggingface.co/CewEhao/VideoSEAL_8B"
 
 [tool.setuptools.packages.find]
 where = ["."]

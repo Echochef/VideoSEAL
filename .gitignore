@@ -5,5 +5,10 @@ __pycache__/
 .DS_Store
 serve/
 
+# Local-only directories
+data/
+runs/
+test/
+
 # Third-party tooling outputs
 third_party/video-subtitle-extractor/output/

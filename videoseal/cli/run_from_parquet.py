@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shlex
 import subprocess
 import sys
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Optional
+
+
+DEFAULT_VLLM_MODEL = "Qwen/Qwen3-8B"
 
 
 def _repo_root() -> Path:
@@ -103,7 +108,7 @@ def resolve_vllm_discovery(env: Mapping[str, str], *, repo_root: Path) -> VllmDi
     base_port = (env.get("VLLM_BASE_PORT") or "").strip() or port
     num_servers = (env.get("VLLM_NUM_SERVERS") or "").strip() or "1"
 
-    model = (env.get("VLLM_MODEL") or "").strip() or "Qwen/Qwen3-8B"
+    model = (env.get("VLLM_MODEL") or "").strip() or DEFAULT_VLLM_MODEL
     served_model_name = (env.get("VLLM_SERVED_MODEL_NAME") or "").strip() or os.path.basename(model.rstrip("/")) or "local-vllm"
     desired_model_id = served_model_name
 
@@ -146,6 +151,50 @@ def resolve_vllm_discovery(env: Mapping[str, str], *, repo_root: Path) -> VllmDi
         served_model_name=served_model_name,
         meta_used=meta_used,
     )
+
+
+def detect_openai_model_id(base_url: str, *, timeout_sec: float = 2.0) -> str:
+    base = str(base_url or "").strip().rstrip("/")
+    if not base:
+        return ""
+    try:
+        with urllib.request.urlopen(f"{base}/models", timeout=float(timeout_sec)) as r:
+            if getattr(r, "status", 0) != 200:
+                return ""
+            data = json.loads(r.read().decode("utf-8"))
+    except Exception:
+        return ""
+    for model in data.get("data") or []:
+        if isinstance(model, dict) and model.get("id"):
+            return str(model["id"])
+    return ""
+
+
+def resolve_agent_backend(env: Mapping[str, str], *, vllm: VllmDiscovery) -> str:
+    configured = (env.get("AGENT_LLM_BACKEND") or "").strip()
+    if configured:
+        return configured
+
+    local_base = vllm.local_openai_base
+    detected_model = detect_openai_model_id(local_base)
+    if detected_model:
+        require_match = (env.get("VLLM_META_REQUIRE_MODEL_MATCH") or "").strip() or "1"
+        if require_match == "1" and vllm.served_model_name and detected_model != vllm.served_model_name:
+            raise SystemExit(
+                f"vLLM model mismatch at {local_base}: expected={vllm.served_model_name} detected={detected_model} "
+                "(fix VLLM_BASE_PORT/VLLM_PORT or VLLM_SERVED_MODEL_NAME)."
+            )
+        os.environ["AGENT_LLM_BACKEND"] = "api"
+        os.environ["AGENT_LLM_API_BASE"] = local_base
+        os.environ["AGENT_LLM_MODEL"] = vllm.served_model_name or detected_model
+        if (env.get("AGENT_LLM_TIMEOUT_WAS_SET") or "").strip() != "1":
+            os.environ["AGENT_LLM_TIMEOUT"] = "600"
+        print(f"[INFO] detected local vLLM service, using API mode: {local_base} (model={os.environ['AGENT_LLM_MODEL']})")
+        return "api"
+
+    os.environ["AGENT_LLM_BACKEND"] = "vllm"
+    print(f"[INFO] local vLLM service not detected ({local_base}); using local vLLM engine mode")
+    return "vllm"
 
 
 def resolve_visual_inspect_base_pool(env: Mapping[str, str]) -> list[str]:
@@ -323,7 +372,7 @@ def main() -> int:
 
     vllm = resolve_vllm_discovery(os.environ, repo_root=repo_root)
     visual_inspect_pool = resolve_visual_inspect_base_pool(os.environ)
-    agent_backend = (os.getenv("AGENT_LLM_BACKEND") or "").strip() or "api"
+    agent_backend = resolve_agent_backend(os.environ, vllm=vllm)
     runner_module = "videoseal.runner.per_question_runner" if agent_backend == "api" else "videoseal.runner.per_question_runner_vllm"
 
     run_num_shards = resolve_run_num_shards(vllm_num_servers=vllm.num_servers, tool_pool_size=len(visual_inspect_pool), env=os.environ)

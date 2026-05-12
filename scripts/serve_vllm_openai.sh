@@ -10,7 +10,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-export PYTHON="${PYTHON:-/root/miniconda3/envs/rllm/bin/python}"
+export PYTHON="${PYTHON:-python}"
 export VLLM_MODEL="${VLLM_MODEL:-Qwen/Qwen3-8B}"
 export VLLM_SERVED_MODEL_NAME="${VLLM_SERVED_MODEL_NAME:-$(basename "${VLLM_MODEL%/}")}"
 export VLLM_TENSOR_PARALLEL="${VLLM_TENSOR_PARALLEL:-1}"

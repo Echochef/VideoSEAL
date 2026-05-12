@@ -64,10 +64,10 @@ def strip_multiple_choice_options(text: str) -> str:
     t = (str(text) or "").strip()
     if not t:
         return t
-    markers = list(re.finditer(r"\(([A-Za-z])\)|\[([A-Za-z])\]|\b([A-Za-z])[\)\.:：、]\s*", t))
+    markers = list(re.finditer(r"\(([A-Za-z])\)|\[([A-Za-z])\]|\b([A-Za-z])[\)\.:]\s*", t))
     if len(markers) >= 2:
         return t[: markers[0].start()].strip()
-    m = re.search(r"(?m)^(?:\(|\[)?[A-Za-z](?:\)|\])?[\)\.:：、]\s+", t)
+    m = re.search(r"(?m)^(?:\(|\[)?[A-Za-z](?:\)|\])?[\)\.:]\s+", t)
     if m:
         return t[: m.start()].strip()
     return t

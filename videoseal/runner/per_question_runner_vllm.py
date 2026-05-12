@@ -192,7 +192,14 @@ def main() -> int:
     ap.add_argument("--save-runs", default=None)
     ap.add_argument("--max-steps", type=int, default=int(os.getenv("MAX_STEPS", "8")))
     ap.add_argument("--task-timeout-sec", type=float, default=float(os.getenv("TASK_TIMEOUT_SEC", "0") or "0"))
+    ap.add_argument("--concurrency", type=int, default=int(os.getenv("CONCURRENCY", "1")))
+    ap.add_argument("--shard-index", type=int, default=0)
+    ap.add_argument("--num-shards", type=int, default=1)
+    ap.add_argument("--no-aggregate", action="store_true")
     args = ap.parse_args()
+
+    if int(args.num_shards) != 1 or int(args.shard_index) != 0:
+        raise SystemExit("Local vLLM runner only supports a single shard.")
 
     parquet_path = Path(args.parquet)
     runs_root = Path(args.save_runs) if args.save_runs else (Path(__file__).resolve().parents[2] / "runs")
@@ -234,4 +241,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
