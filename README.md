@@ -9,7 +9,7 @@
   <a href="#-citation">
     <img alt="ICML 2026" src="https://img.shields.io/badge/ICML-2026-blue">
   </a>
-  <a href="https://github.com/Echochef/VideoSeal">
+  <a href="https://github.com/Echochef/VideoSEAL">
     <img alt="Code" src="https://img.shields.io/badge/Code-GitHub-black?logo=github">
   </a>
 </p>
@@ -82,7 +82,7 @@ export VISUAL_INSPECT_API_KEY="sk_..."
 ### 3. Offline build
 
 ```bash
-cd /path/to/Videoseal
+cd /path/to/VideoSEAL
 
 VIDEO=/path/to/video.mp4 \
 BENCHMARK=LVBench \
@@ -94,7 +94,7 @@ BENCHMARK=LVBench \
 The video tool-agent GRPO workflow runs out of the box thanks to the vendored `rllm` + `verl`.
 
 ```bash
-cd /path/to/Videoseal
+cd /path/to/VideoSEAL
 
 TRAIN_PARQUET='["/path/to/train.parquet"]' \
 VAL_PARQUET='/path/to/val.parquet' \

@@ -33,8 +33,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Echochef/VideoSeal"
-Repository = "https://github.com/Echochef/VideoSeal"
+Homepage = "https://github.com/Echochef/VideoSEAL"
+Repository = "https://github.com/Echochef/VideoSEAL"
 "Model (HuggingFace)" = "https://huggingface.co/CewEhao/VideoSEAL_8B"
 
 [tool.setuptools.packages.find]
